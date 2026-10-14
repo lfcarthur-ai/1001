@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Meus dados{% endblock %}
+{% block content %}
+<section class="card narrow">
+  <h1>Meus dados</h1>
+  <form method="post" class="form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Nome <input name="name" value="{{ current_user.name }}" required maxlength="80"></label>
+    <label>E-mail <input type="email" name="email" value="{{ current_user.email }}" required></label>
+    <fieldset>
+      <legend>Alterar senha (opcional)</legend>
+      <label>Nova senha <input type="password" name="password" minlength="8" autocomplete="new-password"></label>
+      <label>Confirme a nova senha <input type="password" name="password2" minlength="8" autocomplete="new-password"></label>
+    </fieldset>
+    <label>Senha atual <small class="muted">(obrigatória para alterar e-mail ou senha)</small>
+      <input type="password" name="current_password" autocomplete="current-password"></label>
+    <button class="btn primary" type="submit">Salvar</button>
+  </form>
+  <p class="muted">Perfil: {{ 'Administrador' if current_user.is_admin else 'Usuário' }}</p>
+</section>
+{% endblock %}

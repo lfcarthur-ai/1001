@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Importar/Exportar{% endblock %}
+{% block content %}
+<h1>Importar / Exportar</h1>
+<div class="grid-2">
+<section class="card">
+  <h2>Importar histórico legado</h2>
+  <p>Envie um CSV com as colunas <code>Artist, Album, Released, Rating, Notes, Global Rating, Origin, Generated Date</code>
+     (formato do 1001 Albums Generator). <em>Global Rating</em> e <em>Origin</em> são ignorados.</p>
+  <ul class="hint">
+    <li>Cada linha é casada com o catálogo: primeiro por match exato normalizado (artista, álbum e ano), depois por similaridade, com revisão manual antes de confirmar.</li>
+    {% if current_user.is_admin %}
+    <li><strong>Você é administrador:</strong> os álbuns importados entram no histórico de sorteios (com a data de <em>Generated Date</em>) e deixam de ser sorteados.</li>
+    {% else %}
+    <li>Linhas de álbuns que ainda não foram sorteados (segundo o histórico do administrador) são descartadas automaticamente.</li>
+    {% endif %}
+  </ul>
+  {% if job %}
+    <p class="flash flash-info">Você tem uma importação aguardando revisão ({{ job.filename }}). <a href="{{ url_for('data.review') }}">Continuar revisão</a></p>
+  {% endif %}
+  <form method="post" action="{{ url_for('data.upload') }}" enctype="multipart/form-data" class="form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Arquivo CSV <input type="file" name="arquivo" accept=".csv,text/csv" required></label>
+    <button class="btn primary" type="submit">Analisar arquivo</button>
+  </form>
+</section>
+<section class="card">
+  <h2>Exportar</h2>
+  <p>Cada aba pode ser exportada individualmente em CSV (separador “;”, compatível com o Excel em português).</p>
+  <form method="get" class="form" id="export-form">
+    <label>Usuário (histórico e estatísticas individuais)
+      <select name="usuario">
+        {% for u in users %}<option value="{{ u.id }}" {{ 'selected' if u.id == current_user.id }}>{{ u.name }}</option>{% endfor %}
+      </select></label>
+    <div class="actions wrap">
+      <button class="btn" formaction="{{ url_for('data.export_history') }}">⬇ Histórico</button>
+      <button class="btn" formaction="{{ url_for('data.export_individual') }}">⬇ Estatísticas individuais</button>
+    </div>
+  </form>
+  <p><a class="btn" href="{{ url_for('data.export_group') }}">⬇ Estatísticas do grupo</a></p>
+</section>
+</div>
+{% endblock %}

@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}{{ ctx.album.title }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('main.history') }}">← Histórico</a></p>
+{% include "_album_card.html" %}
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='app.js') }}" defer></script>{% endblock %}

@@ -1,0 +1,11 @@
+{% from "_macros.html" import avg, delta %}
+<div class="table-wrap">
+<table class="table compact">
+  <thead><tr><th>{{ label }}</th><th class="num">Álbuns</th><th class="num">Sua média</th><th class="num">Média de todos</th><th class="num">Delta</th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr><td>{{ r.label }}</td><td class="num">{{ r.n }}</td><td class="num">{{ avg(r.user_avg) }}</td><td class="num">{{ avg(r.group_avg) }}</td><td class="num">{{ delta(r.delta) }}</td></tr>
+  {% else %}<tr><td colspan="5" class="muted center">Sem avaliações ainda.</td></tr>{% endfor %}
+  </tbody>
+</table>
+</div>

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Entrar{% endblock %}
+{% block content %}
+<section class="auth card">
+  <h1>💿 1001 Álbuns</h1>
+  <p class="muted">Acompanhe com o seu grupo a lista “1001 álbuns para ouvir antes de morrer”.</p>
+  <form method="post" class="form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>E-mail <input type="email" name="email" required autocomplete="email" autofocus></label>
+    <label>Senha <input type="password" name="password" required autocomplete="current-password"></label>
+    <label class="check"><input type="checkbox" name="remember" value="1"> Manter conectado</label>
+    <button class="btn primary" type="submit">Entrar</button>
+  </form>
+  <p>Ainda não tem conta? <a href="{{ url_for('auth.register') }}">Cadastre-se</a>.</p>
+  {% if no_users %}<p class="hint">Nenhum usuário cadastrado ainda: a primeira conta criada será a de administrador.</p>{% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% macro cover(album, size='sm') -%}
+  {%- if album.cover_url -%}
+    <img class="cover cover-{{ size }}" src="{{ album.cover_url }}" alt="Capa de {{ album.title }}" loading="lazy" referrerpolicy="no-referrer">
+  {%- else -%}
+    <span class="cover cover-{{ size }} cover-empty" role="img" aria-label="Capa indisponível">💿</span>
+  {%- endif -%}
+{%- endmacro %}
+
+{% macro stars(half) -%}
+  {%- if half is none -%}<span class="muted">—</span>{%- else -%}
+  <span class="stars" title="{{ half|stars }} estrelas" aria-label="{{ half|stars }} estrelas">
+    {%- for i in range(1, 6) -%}
+      {%- if half >= i * 2 -%}<span class="s full">★</span>
+      {%- elif half == i * 2 - 1 -%}<span class="s halfstar">★</span>
+      {%- else -%}<span class="s empty">★</span>{%- endif -%}
+    {%- endfor -%}
+    <span class="stars-num">{{ half|stars }}</span>
+  </span>
+  {%- endif -%}
+{%- endmacro %}
+
+{% macro avg(value) -%}
+  {%- if value is none -%}<span class="muted">—</span>{%- else -%}<strong>{{ value|num }}</strong>{%- endif -%}
+{%- endmacro %}
+
+{% macro delta(value) -%}
+  {%- if value is none -%}<span class="muted">—</span>
+  {%- else -%}<span class="delta {{ 'pos' if value > 0.005 else ('neg' if value < -0.005 else '') }}">{{ value|delta }}</span>{%- endif -%}
+{%- endmacro %}
+
+{% macro album_links(album, fallback=None) -%}
+  {%- if album.wikipedia_url -%}<a href="{{ album.wikipedia_url }}" target="_blank" rel="noopener">Wikipedia</a>
+  {%- elif fallback -%}<a href="{{ fallback }}" target="_blank" rel="noopener" title="Artigo não identificado automaticamente; abre a busca">Wikipedia (busca)</a>{%- endif -%}
+  {%- if album.rym_link %} · <a href="{{ album.rym_link }}" target="_blank" rel="noopener">RateYourMusic</a>{%- endif -%}
+{%- endmacro %}
+
+{% macro csrf() -%}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{%- endmacro %}

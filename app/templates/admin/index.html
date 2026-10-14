@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Administração{% endblock %}
+{% block content %}
+<h1>Administração</h1>
+<div class="grid-2">
+<section class="card">
+  <h2>Usuários</h2>
+  <p class="hint">Qualquer pessoa com o link de cadastro pode criar uma conta: <code>{{ url_for('auth.register', _external=True) }}</code></p>
+  <div class="table-wrap"><table class="table compact">
+    <thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Situação</th><th></th></tr></thead>
+    <tbody>{% for u in users %}
+      <tr><td>{{ u.name }}</td><td>{{ u.email }}</td><td>{{ 'Administrador' if u.is_admin else 'Usuário' }}</td>
+        <td>{{ 'Ativo' if u.active else 'Desativado' }}</td><td><a href="{{ url_for('admin.edit_user', user_id=u.id) }}">Editar</a></td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+</section>
+<section class="card">
+  <h2>Catálogo e enriquecimento</h2>
+  <ul>
+    <li>{{ total }} álbuns no catálogo · {{ drawn }} sorteados</li>
+    <li>{{ enriched }} com dados enriquecidos · {{ pending }} pendentes</li>
+    <li>{{ missing_cover }} álbum(ns) sorteado(s) sem capa</li>
+  </ul>
+  <p class="hint">O enriquecimento roda automaticamente em segundo plano (priorizando álbuns sorteados) usando MusicBrainz, Cover Art Archive, Wikidata/Wikipedia e iTunes.</p>
+  <form method="post" action="{{ url_for('admin.enrich_now') }}" class="inline">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="limite" value="5">
+    <button class="btn" type="submit">Enriquecer 5 álbuns agora</button>
+  </form>
+</section>
+</div>
+{% endblock %}
