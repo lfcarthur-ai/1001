@@ -1,9 +1,0 @@
-<form method="get" class="user-picker">
-  {% for k, v in (extra or {}).items() %}{% if v is not none %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endif %}{% endfor %}
-  <label>Ver usuário
-    <select name="usuario" onchange="this.form.submit()">
-      {% for u in users %}<option value="{{ u.id }}" {{ 'selected' if u.id == user.id }}>{{ u.name }}{{ ' (você)' if u.id == current_user.id }}</option>{% endfor %}
-    </select>
-  </label>
-  <noscript><button class="btn small" type="submit">Ver</button></noscript>
-</form>

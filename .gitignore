@@ -1,8 +1,9 @@
-__pycache__/
-*.pyc
-.venv/
-venv/
-instance/
-*.db
-.pytest_cache/
+node_modules/
+.output/
+.vinxi/
+.tanstack/
+dist/
 .env
+.env.local
+*.log
+.DS_Store

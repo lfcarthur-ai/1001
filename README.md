@@ -1,95 +1,139 @@
-# 1001 Álbuns — clube de audição
+# 1001 Álbuns — plataforma do grupo
 
-Plataforma fechada para um grupo acompanhar a lista **“1001 álbuns para ouvir antes de morrer”**.
-Todo dia, à meia-noite (horário de Brasília), um álbum ainda não ouvido é sorteado como **álbum do dia**,
-o mesmo para todos. Os usuários avaliam (0,5 a 5 estrelas), indicam se o álbum deveria estar na lista,
-comentam, e a plataforma gera estatísticas individuais e do grupo.
+Plataforma fechada, em português, para o grupo acompanhar a lista **“1001 álbuns para ouvir antes de morrer”**.
+Todo dia, à meia-noite (horário de Brasília), um álbum que o administrador ainda não ouviu é sorteado como
+**álbum do dia**, o mesmo para todos. Cada pessoa dá uma nota de 0,5 a 5 estrelas, diz se o álbum deveria estar
+na lista e comenta; a plataforma mostra histórico, estatísticas individuais e do grupo, importa históricos
+legados e exporta tudo em CSV.
 
-Stack: Python 3.11+, Flask, SQLAlchemy (SQLite por padrão; PostgreSQL via `DATABASE_URL`),
-APScheduler e páginas renderizadas no servidor (sem build de front-end).
+**Stack:** TanStack Start (React 19, SSR) · Supabase (Postgres, Auth, RLS, pg_cron, pg_net, pg_trgm) ·
+Tailwind CSS 4 · recharts · papaparse.
 
-## Como rodar
+## Projetos
+
+Cada lista de álbuns é um **projeto**. O primeiro, “1001 Álbuns”, vem de `data/albums.csv` (1.089 álbuns) e já
+nasce ativo. Em **Administração → Projetos** o administrador cria um projeto novo (nome + CSV no formato
+`Artist, Title, Release Date, Run Time, Genre`), confere a pré-visualização (rascunho invisível para os demais)
+e ativa. Só um projeto fica ativo por vez (índice único parcial no banco); ao ativar outro, o anterior é
+encerrado, para de ter sorteios e suas avaliações continuam visíveis. Histórico, estatísticas e barra de
+progresso têm abas por projeto (padrão: o ativo; encerrados marcados como “encerrado”).
+
+## Páginas
+
+| Rota | Página |
+|---|---|
+| `/entrar`, `/cadastrar` | Login e cadastro (qualquer pessoa com o link). A conta **lfcarthur@gmail.com** recebe o papel de administrador automaticamente. |
+| `/` | Álbum do dia: capa, ficha, links Wikipedia/RateYourMusic, nota com meias estrelas, “deveria estar na lista?”, comentário, avaliações do grupo. |
+| `/historico` | Ordem, data, mini capa, álbum, artista, minha nota, média global, links; filtros por gênero, década e nota; ver o histórico de outra pessoa. |
+| `/album/:id` | Detalhe do álbum com todas as avaliações. |
+| `/estatisticas` | Por década, gênero e país (quantidade, minha média, média do grupo, diferença), média por ano, outliers, % “deveria estar” eu × grupo, comparação com cada usuário. |
+| `/grupo` | Progresso, distribuição de notas, melhor/pior década e gênero, top/bottom 5, mais controversos (desvio padrão), breakdowns, tabela de sorteados. “Ver mais” em `/grupo/ranking/:tipo`. |
+| `/importar` | Importação do CSV legado com revisão; exportação CSV de cada aba. |
+| `/configuracoes` | Nome, e-mail e troca de senha. |
+| `/admin` | Só para administradores: enriquecimento em lote, usuários (dados e papéis) e projetos. |
+
+## Regras garantidas no banco
+
+- Só é possível avaliar álbuns já sorteados (política RLS em `ratings`), e cada um só edita as próprias notas.
+- Nota de 0,5 a 5 em passos de 0,5 (`check`), uma por usuário e álbum (`unique`).
+- Catálogo somente leitura para usuários; escrita só do administrador, via `create_project`.
+- Sorteio apenas no projeto ativo, entre álbuns sem registro em `daily_picks`; um álbum do dia por data.
+- Rotas e server functions de administração revalidam `has_role(auth.uid(), 'admin')` no servidor.
+
+`daily_picks` também guarda o histórico legado importado pelo administrador (`source = 'importacao'`), que pode
+repetir datas. Por isso a unicidade da data vale para os sorteios (`source = 'sorteio'`) e por projeto — como só
+há um projeto ativo, na prática é “um álbum do dia por data” e a troca de projeto no meio do dia não conflita.
+
+## Como rodar localmente
+
+Requisitos: Node 22+, Docker (para o Supabase local) e a [Supabase CLI](https://supabase.com/docs/guides/local-development).
 
 ```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-export SECRET_KEY="uma-chave-longa-e-aleatoria"
-gunicorn -w 1 --threads 8 -b 0.0.0.0:8000 wsgi:app
-# ou, em desenvolvimento: flask --app wsgi run --debug
+npm install
+npx supabase start          # sobe Postgres/Auth/REST e aplica supabase/migrations (inclui o seed)
+cp .env.example .env        # preencha com a URL e as chaves exibidas pelo comando acima
+npm run dev                 # http://localhost:3000
 ```
 
-Acesse `/cadastro`: **a primeira conta criada vira administradora**. Depois disso, qualquer pessoa com o
-link de cadastro pode criar sua conta. Todas as demais páginas exigem login.
-
-Com Docker: `docker build -t 1001 . && docker run -p 8000:8000 -e SECRET_KEY=... -v $PWD/instance:/app/instance 1001`.
+Cadastre-se com `lfcarthur@gmail.com` para ter a conta de administrador.
 
 ### Variáveis de ambiente
 
-| Variável | Padrão | Descrição |
+| Variável | Onde | Descrição |
 |---|---|---|
-| `SECRET_KEY` | (inseguro) | Chave de sessão. **Defina em produção.** |
-| `DATABASE_URL` | `sqlite:///instance/app.db` | Banco de dados |
-| `ALBUMS_CSV` | `data/albums.csv` | Catálogo carregado automaticamente se o banco estiver vazio |
-| `SCHEDULER_ENABLED` | `1` | Liga o agendador (sorteio + enriquecimento) |
-| `ENRICH_ENABLED` | `1` | Liga o enriquecimento automático |
-| `ENRICH_BATCH_SIZE` / `ENRICH_INTERVAL_MINUTES` | `10` / `5` | Ritmo do enriquecimento em segundo plano |
+| `VITE_SUPABASE_URL` | build + servidor | URL do projeto Supabase |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | build + servidor | Chave pública (anon/publishable) |
+| `SUPABASE_SERVICE_ROLE_KEY` | só servidor | Usada no cron, no enriquecimento e na edição de e-mail pelo admin |
+| `CRON_SECRET` | só servidor | Segredo da rota `/api/public/cron/daily-pick` |
+| `ENRICH_USER_AGENT` | só servidor | User-Agent com contato, exigido pelo MusicBrainz |
 
-## Catálogo
+## Produção
 
-`data/albums.csv` contém os 1.089 álbuns (`Artist, Title, Release Date, Run Time, Genre`; também são aceitos
-cabeçalhos em português: Artista, Nome do Álbum, Ano de Lançamento, Duração, Gênero). Ele é carregado na
-primeira inicialização e não pode ser alterado pela interface. Para acrescentar manualmente:
-`flask --app wsgi carregar-catalogo data/albums.csv` (só insere álbuns novos).
+1. **Banco:** `npx supabase link --project-ref <ref>` e `npx supabase db push` (aplica as migrations, o seed e
+   agenda o cron). Em Authentication → URL Configuration, defina o *Site URL* do app. Se quiser cadastro sem
+   confirmação de e-mail, desligue “Confirm email”.
+2. **Segredos do cron no Vault** (SQL Editor):
+   ```sql
+   select vault.create_secret('https://seu-app.exemplo.com', 'app_url');
+   select vault.create_secret('<mesmo valor de CRON_SECRET>', 'cron_secret');
+   ```
+3. **App:** `npm run build` gera `.output/` (Nitro). `node .output/server/index.mjs` roda em qualquer host Node;
+   há um `Dockerfile` (passe `VITE_SUPABASE_URL`/`VITE_SUPABASE_PUBLISHABLE_KEY` como build args). Para Vercel,
+   Netlify ou Cloudflare, troque o preset do Nitro/plugin em `vite.config.ts`.
 
-## Sorteio diário
+### Sorteio diário
 
-- Tarefa agendada às 00:00 de `America/Sao_Paulo` escolhe aleatoriamente um álbum que **não está no histórico
-  do administrador** (tabela de sorteios, que inclui o histórico legado importado pelo administrador).
-- A data do álbum do dia é única no banco, então o sorteio nunca se repete no mesmo dia, mesmo com vários
-  processos. Se o servidor estiver desligado à meia-noite, o sorteio acontece no primeiro acesso do dia.
-- Se o histórico importado pelo administrador já tiver um álbum com a data de hoje, ele vira o álbum do dia.
-- Só é possível avaliar álbuns já sorteados. Comando manual: `flask --app wsgi sortear`.
+- `pg_cron` chama `public.call_daily_pick_endpoint()` às **03:00 UTC** (00:00 em Brasília), que faz um POST em
+  `/api/public/cron/daily-pick` com `Authorization: Bearer <cron_secret>` via `pg_net`.
+- A rota chama `pick_daily_album()` (insert com `ON CONFLICT DO NOTHING`, então é idempotente), enriquece o álbum
+  do dia e um lote pequeno de pendentes.
+- Redes de segurança: às 03:05 UTC o próprio banco roda `pick_daily_album_for(today_brt())`, e a página inicial
+  cria o sorteio do dia se ele ainda não existir.
 
-## Enriquecimento automático
+### Enriquecimento
 
-Capa, link da Wikipedia, link do RateYourMusic, país de origem e data de lançamento completa vêm de APIs
-públicas e gratuitas: **MusicBrainz** (identificação, data, país do artista, links), **Cover Art Archive**
-(capa, com fallback na **iTunes Search API**), **Wikidata/Wikipedia** (artigo, preferindo pt.wikipedia).
-O RateYourMusic não tem API: o link é montado pelo padrão de URL do site
-(`/release/album/<artista>/<album>/`) e pode falhar em nomes ambíguos.
+MusicBrainz (release-group, data, país do artista, links) → Cover Art Archive (capa) → Wikidata/Wikipedia
+(artigo, preferindo pt.wikipedia; busca na Wikipedia como fallback) → link do RateYourMusic montado por slug (o
+site não tem API e o link pode falhar em nomes ambíguos). As chamadas ao MusicBrainz são serializadas com
+intervalo ≥ 1,1 s; o resultado fica em cache nas colunas do álbum e cada álbum tem no máximo 3 tentativas
+automáticas (o administrador pode reprocessar na página do álbum).
 
-Roda em segundo plano (respeitando o limite de 1 req/s do MusicBrainz), priorizando álbuns já sorteados; o
-álbum do dia é enriquecido logo após o sorteio. O administrador pode forçar lotes em **Administração** ou
-reprocessar um álbum na página dele. Comando: `flask --app wsgi enriquecer --limite 50`.
+### Importação de histórico legado
 
-## Importação de histórico legado
+CSV com `Artist, Album, Released, Rating, Notes, Global Rating, Origin, Generated Date` (Global Rating e Origin
+são ignorados), lido no navegador com papaparse. O casamento tem três camadas:
 
-Em **Importar/Exportar**, envie um CSV com `Artist, Album, Released, Rating, Notes, Global Rating, Origin,
-Generated Date` (Global Rating e Origin são ignorados). O casamento com o catálogo tem três camadas:
+1. normalização (`public.f_normalize`: minúsculas, sem acentos, aspas, pontuação e artigos) + match exato de
+   artista/álbum/ano;
+2. 3 a 5 candidatos por similaridade de trigramas (`pg_trgm`), com busca livre no catálogo;
+3. tela de revisão manual e confirmação em lote (`apply_import_batch`).
 
-1. normalização (minúsculas, sem acentos, pontuação, artigos e aspas especiais) + match exato de artista/álbum/ano;
-2. fuzzy matching (RapidFuzz) sugerindo de 3 a 5 candidatos;
-3. tela de revisão manual (escolher sugestão, digitar outro álbum do catálogo ou ignorar) antes de confirmar.
-
-- **Administrador:** os álbuns importados entram no histórico de sorteios com a data de *Generated Date*.
-- **Demais usuários:** linhas de álbuns ainda não sorteados (comparando com o histórico do administrador)
-  são descartadas automaticamente. Por isso o administrador deve importar primeiro.
-- Avaliações já existentes só são sobrescritas se a opção for marcada.
-
-## Exportação
-
-Histórico, estatísticas individuais (de qualquer usuário) e estatísticas do grupo são exportados
-separadamente em CSV (separador `;`, vírgula decimal, UTF-8 com BOM, para abrir direto no Excel).
-
-## Perfis
-
-- **Usuário:** avalia álbuns sorteados, edita os próprios dados e avaliações, vê histórico e estatísticas de todos.
-- **Administrador:** além disso, edita dados de outros usuários (nome, e-mail, senha), promove/rebaixa
-  administradores, desativa ou exclui contas. A plataforma sempre mantém ao menos um administrador ativo.
+O histórico do **administrador** entra em `daily_picks` com a data de *Generated Date* (sai do sorteio). Para os
+**demais**, notas de álbuns ainda não sorteados são descartadas automaticamente — o administrador deve importar
+primeiro. Avaliações existentes só são sobrescritas se a opção for marcada.
 
 ## Testes
 
 ```bash
-pip install -r requirements-dev.txt
-pytest
+npm test            # vitest: normalização, parsers CSV, formatação/exportação, enriquecimento (fetch simulado)
+npm run test:db     # aplica as migrations num Postgres local (stub do Supabase) e roda tests/db/*.sql
+npm run typecheck
+npm run build
 ```
+
+`tests/db` cobre RLS (anônimo, usuário, admin), admin automático, sorteio idempotente, regras de nota,
+importação admin × usuário, estatísticas e ciclo de vida dos projetos.
+
+## Estrutura
+
+```
+supabase/migrations/   schema, RLS, funções (sorteio, projetos, importação), estatísticas, cron, seed
+src/routes/            páginas (TanStack Router, arquivos) — protegidas sob _authenticated/
+src/routes/api/public/cron/daily-pick.ts   rota do cron
+src/server/            server functions (auth/admin validados no servidor)
+src/lib/               normalização, CSV, formatação, exportação, enriquecimento, clientes Supabase
+src/components/        capa, estrelas, abas de projeto, gráficos, tabelas
+scripts/               gerador do seed a partir de data/albums.csv e runner dos testes de banco
+```
+
+Para regenerar o seed depois de alterar `data/albums.csv`: `npm run seed:generate`.

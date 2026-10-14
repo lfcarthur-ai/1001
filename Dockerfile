@@ -1,10 +1,18 @@
-FROM python:3.13-slim
+# Build
+FROM node:22-slim AS build
 WORKDIR /app
-ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY package.json package-lock.json ./
+RUN npm ci
 COPY . .
-EXPOSE 8000
-# Um único processo (com threads) para que o agendador rode uma só vez.
-# Mesmo com vários processos o sorteio continua único (restrição no banco).
-CMD ["gunicorn", "-w", "1", "--threads", "8", "-b", "0.0.0.0:8000", "wsgi:app"]
+# Variáveis públicas do Supabase entram no bundle do navegador no build.
+ARG VITE_SUPABASE_URL
+ARG VITE_SUPABASE_PUBLISHABLE_KEY
+RUN npm run build
+
+# Execução (SUPABASE_SERVICE_ROLE_KEY, CRON_SECRET e ENRICH_USER_AGENT no ambiente)
+FROM node:22-slim
+WORKDIR /app
+ENV NODE_ENV=production PORT=3000
+COPY --from=build /app/.output ./.output
+EXPOSE 3000
+CMD ["node", ".output/server/index.mjs"]
