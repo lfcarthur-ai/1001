@@ -1,7 +1,0 @@
-{% from "_macros.html" import cover, avg %}
-<ol class="album-list ranked">
-  {% for r in rows %}
-  <li>{{ cover(r.album, 'xs') }}<div><a href="{{ url_for('main.album', album_id=r.album.id) }}">{{ r.album.title }}</a><div class="sub">{{ r.album.artist }} · {{ r.album.year or '' }}</div></div>
-    <div class="right">{% if show_std %}σ {{ r.std|num }} · {% endif %}{{ avg(r.avg) }} <span class="muted small">({{ r.votes }})</span></div></li>
-  {% else %}<li class="muted">Sem avaliações ainda.</li>{% endfor %}
-</ol>

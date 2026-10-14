@@ -1,0 +1,125 @@
+@import 'tailwindcss';
+
+/* Encarte de vinil: papel creme, tinta preta, acentos laranja-ferrugem. */
+@theme {
+  --color-paper: #f2ead9;
+  --color-paper-deep: #e8dcc2;
+  --color-card: #f8f2e6;
+  --color-ink: #1b1814;
+  --color-ink-soft: #51483e;
+  --color-ink-faint: #8a7e6e;
+  --color-line: #cfc0a0;
+  --color-rust: #b4461c;
+  --color-rust-deep: #8c3311;
+  --color-rust-wash: #f0d6c3;
+  --color-olive: #5d6b3a;
+  --color-sky: #1f6fa3; /* 2ª série dos gráficos (validada com a ferrugem) */
+
+  --font-display: 'Fraunces', 'Georgia', serif;
+  --font-serif: 'Source Serif 4', 'Georgia', serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+  body {
+    @apply bg-paper text-ink font-serif antialiased;
+    font-size: 17px;
+    line-height: 1.55;
+    background-image:
+      radial-gradient(ellipse at top, rgb(255 255 255 / 0.45), transparent 60%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.28 0 0 0 0 0.18 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    min-height: 100vh;
+  }
+  h1, h2, h3, h4 {
+    @apply font-display text-ink;
+    font-optical-sizing: auto;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+  }
+  a {
+    @apply text-rust-deep underline decoration-rust/40 underline-offset-2 transition-colors hover:text-rust hover:decoration-rust;
+  }
+  ::selection {
+    @apply bg-rust text-paper;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-rust);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .eyebrow {
+    @apply font-mono text-[0.7rem] font-medium tracking-[0.18em] text-ink-faint uppercase;
+  }
+  .rule {
+    @apply border-0 h-[5px] my-6;
+    border-top: 1px solid var(--color-ink);
+    border-bottom: 1px solid var(--color-ink);
+  }
+  .card {
+    @apply bg-card border border-line rounded-sm p-5 shadow-[0_1px_0_rgb(27_24_20/0.06)];
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-sm border border-ink bg-transparent font-mono text-xs font-medium tracking-[0.12em] uppercase text-ink no-underline transition-colors cursor-pointer hover:bg-ink hover:text-paper disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply bg-rust border-rust text-paper hover:bg-rust-deep hover:border-rust-deep hover:text-paper;
+  }
+  .btn-ghost {
+    @apply border-transparent text-ink-soft hover:bg-paper-deep hover:text-ink;
+  }
+  .btn-sm {
+    @apply px-2.5 py-1 text-[0.65rem];
+  }
+  .input,
+  .select,
+  .textarea {
+    @apply w-full rounded-sm border border-line bg-card px-3 py-2 font-serif text-base text-ink placeholder:text-ink-faint focus:border-rust focus:outline-none;
+  }
+  .label {
+    @apply mb-1 block font-mono text-[0.7rem] tracking-[0.14em] text-ink-soft uppercase;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full border border-line px-2 py-0.5 font-mono text-[0.65rem] tracking-wider text-ink-soft uppercase;
+  }
+  .chip-rust {
+    @apply border-rust bg-rust text-paper;
+  }
+  .num {
+    @apply font-mono tabular-nums;
+  }
+  .table-wrap {
+    @apply overflow-x-auto border-y border-ink;
+  }
+  .table {
+    @apply w-full border-collapse text-sm;
+  }
+  .table th {
+    @apply border-b border-ink px-2 py-2 text-left font-mono text-[0.65rem] font-medium tracking-[0.14em] whitespace-nowrap text-ink-soft uppercase;
+  }
+  .table td {
+    @apply border-b border-line/70 px-2 py-2 align-middle;
+  }
+  .table tr:last-child td {
+    @apply border-b-0;
+  }
+  .table tbody tr:hover {
+    @apply bg-paper-deep/50;
+  }
+  .flash-error {
+    @apply rounded-sm border border-rust bg-rust-wash px-4 py-3 text-sm text-rust-deep;
+  }
+  .flash-ok {
+    @apply rounded-sm border border-olive/50 bg-[#e3e6cf] px-4 py-3 text-sm text-olive;
+  }
+  .cover-shadow {
+    box-shadow:
+      0 1px 0 rgb(255 255 255 / 0.4) inset,
+      0 18px 30px -18px rgb(27 24 20 / 0.55),
+      0 3px 8px rgb(27 24 20 / 0.18);
+  }
+}
